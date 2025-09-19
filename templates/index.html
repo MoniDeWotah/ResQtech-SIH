@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scholar Dropout Prediction System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f9; }
+    .navbar { background: linear-gradient(90deg, #0d6efd, #004085); }
+    .navbar-brand { font-weight: bold; color: white !important; }
+    .content { padding: 20px; max-width: 1200px; margin: auto; }
+    .card { border: none; border-radius: 15px; color: #fff; padding: 20px; }
+    .card h3 { font-weight: bold; }
+    .card-blue { background: linear-gradient(45deg, #1e3c72, #2a5298); }
+    .card-green { background: linear-gradient(45deg, #56ab2f, #a8e063); }
+    .card-red { background: linear-gradient(45deg, #cb2d3e, #ef473a); }
+    .card-orange { background: linear-gradient(45deg, #ff8008, #ffc837); }
+    .table th { background: #0d6efd; color: white; }
+    .table tbody tr:hover { background: #f1f5ff; }
+    .badge { font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg">
+  <div class="container-fluid">
+    <a class="navbar-brand">📘 Scholar Dropout System</a>
+  </div>
+</nav>
+
+<!-- Content -->
+<div class="content">
+  <h2 class="mb-4">Dashboard Overview</h2>
+
+  <!-- Stats Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card card-blue text-center">
+        <h5>Total Students</h5>
+        <h3 id="totalStudents">0</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-red text-center">
+        <h5>Dropout Risk</h5>
+        <h3 id="dropoutRisk">0%</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-green text-center">
+        <h5>Avg Attendance</h5>
+        <h3 id="avgAttendance">0%</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-orange text-center">
+        <h5>Avg Result</h5>
+        <h3 id="avgResult">0%</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Students Table -->
+  <div class="card shadow-sm bg-white text-dark p-3">
+    <h4>Students</h4>
+    <input type="text" id="searchBox" class="form-control mb-3" placeholder="🔍 Search by name...">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>ID</th><th>Name</th><th>Class</th><th>Attendance</th>
+          <th>Result %</th><th>Risk</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="studentTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+async function loadStudents() {
+  let res = await fetch('/api/students');
+  let data = await res.json();
+  
+  // Stats
+  document.getElementById("totalStudents").innerText = data.length;
+  let dropoutCount = data.filter(s => s.dropout == 1).length;
+  document.getElementById("dropoutRisk").innerText = ((dropoutCount/data.length)*100).toFixed(1) + "%";
+  document.getElementById("avgAttendance").innerText = (data.reduce((a,b)=>a+b.attendance,0)/data.length).toFixed(1)+"%";
+  document.getElementById("avgResult").innerText = (data.reduce((a,b)=>a+b.result_pct,0)/data.length).toFixed(1)+"%";
+
+  // Table
+  let table = document.getElementById("studentTable");
+  table.innerHTML = "";
+  data.forEach(s => {
+    let row = `<tr>
+      <td>${s.student_id}</td>
+      <td>${s.name}</td>
+      <td>${s.class}</td>
+      <td>${s.attendance}%</td>
+      <td>${s.result_pct}%</td>
+      <td>${s.dropout ? '<span class="badge bg-danger">At Risk</span>' : '<span class="badge bg-success">Safe</span>'}</td>
+      <td>
+        <a href="/prediction?student_id=${s.student_id}" class="btn btn-sm btn-primary">View</a>
+      </td>
+    </tr>`;
+    table.innerHTML += row;
+  });
+
+  // Search functionality
+  document.getElementById("searchBox").addEventListener("input", function() {
+    const term = this.value.toLowerCase();
+    Array.from(table.children).forEach(tr => {
+      tr.style.display = tr.children[1].innerText.toLowerCase().includes(term) ? "" : "none";
+    });
+  });
+}
+
+window.onload = loadStudents;
+</script>
+
+</body>
+</html>

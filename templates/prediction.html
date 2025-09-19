@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dropout Prediction Result</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Nunito', sans-serif; background-color: #f9fdfc; }
+.card { border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+.details-list p { margin-bottom: 0.6rem; }
+.details-list strong::after { content: ":"; }
+.suggest-box { background: #e8f5e9; border-left: 5px solid #14532d; padding: 15px; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg" style="background-color: #14532d;">
+<div class="container">
+<a class="navbar-brand text-white fw-bold" href="/">Scholar Dropout Prediction</a>
+</div>
+</nav>
+
+<div class="container py-5">
+<div class="card p-4">
+<h2 class="text-primary"><i class="bi bi-person-lines-fill"></i> Student Prediction</h2>
+
+<p id="predictionStatus" class="mb-2 fs-5 fw-bold"></p>
+<p>
+<span class="badge bg-info fs-6" id="predictionProb"></span>
+<span class="badge bg-secondary fs-6" id="modelAcc"></span>
+</p>
+
+<h4 class="mt-4">📌 Student Details</h4>
+<div class="details-list mt-2" id="studentDetails"></div>
+
+<h4 class="mt-4">🤖 AI Insights & Protective Measures</h4>
+<div class="suggest-box mt-2" id="insights"></div>
+
+<a href="/" class="btn btn-outline-secondary mt-4">
+<i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+</a>
+</div>
+</div>
+
+<footer class="bg-dark text-light py-4 mt-5">
+<div class="container text-center">
+<p class="mb-1">Scholar Dropout Prediction System</p>
+<p class="small mb-0">&copy; 2025 Scholar System. All rights reserved.</p>
+</div>
+</footer>
+
+<script>
+async function loadPrediction() {
+    const params = new URLSearchParams(window.location.search);
+    const studentId = params.get("student_id");
+    if (!studentId) return alert("No student selected.");
+
+    let res = await fetch("/api/predict/" + studentId);
+    let data = await res.json();
+
+    document.getElementById("predictionStatus").innerHTML =
+        data.prediction ? "🚨 <span class='text-danger'>Dropout Risk</span>" : "✅ <span class='text-success'>Safe</span>";
+
+    document.getElementById("predictionProb").innerText =
+        "Dropout Probability: " + (data.dropout_probability * 100).toFixed(1) + "%";
+    document.getElementById("modelAcc").innerText =
+        "Model Accuracy: " + (data.model_accuracy * 100).toFixed(1) + "%";
+
+    let details = "";
+    const student = data.student || {};
+    for (let key in student) {
+        if (["student_id","dropout","risk_score"].includes(key)) continue;
+        details += `<p><strong>${key.replace("_"," ")}</strong> ${student[key]}</p>`;
+    }
+    document.getElementById("studentDetails").innerHTML = details;
+
+    let insights = "";
+    if (data.reasons && data.reasons.length > 0) {
+        data.reasons.forEach(r => { insights += `<p>🔹 ${r}</p>`; });
+    } else {
+        insights = "<p>No critical risk factors detected. Student appears safe.</p>";
+    }
+    if(data.ai_insight) insights += `<p>${data.ai_insight}</p>`;
+    insights += "<p><b>Protective Measures:</b> Ensure counselling, monitor attendance, provide financial aid if needed, and engage parents regularly.</p>";
+    document.getElementById("insights").innerHTML = insights;
+}
+window.onload = loadPrediction;
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
